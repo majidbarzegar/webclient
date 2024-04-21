@@ -11,6 +11,7 @@ public class WebClientConfig {
     public WebClient webClient(){
         return WebClient.builder()
                 .baseUrl("http://localhost:1001")
+                .defaultHeaders(httpHeaders -> httpHeaders.setBasicAuth("username", "password"))
                 .build();
     }
 }
