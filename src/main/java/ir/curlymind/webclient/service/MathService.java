@@ -18,9 +18,31 @@ public class MathService {
     @Autowired
     private WebClient webClient;
 
+    private static final int A = 10;
+    private static final String FORMAT = "%d %s %d = %s";
+
     @PostConstruct
     public void test() {
-        multiply();
+        Flux
+                .range(1, 5)
+                .flatMap(b ->
+                        Flux
+                                .just("+", "-", "*", "/")
+                                .flatMap(op -> send(b, op))
+                )
+                .subscribe(new DefaultSubscriber());
+
+
+    }
+
+    private Mono<String> send(int b, String op) {
+        return this.webClient
+                .get()
+                .uri("calculator/{a}/{b}", A, b)
+                .headers(header -> header.set("OP", op))
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(s -> String.format(FORMAT, A, op, b, s));
     }
 
 
@@ -29,6 +51,7 @@ public class MathService {
                 .post()
                 .uri("reactive-math/multiply")
                 .bodyValue(new MultiplyRequestDto(5, 6))
+                .attribute("auth", "basic")
                 .retrieve()
                 .bodyToMono(Response.class);
         response.subscribe(new DefaultSubscriber());
@@ -38,6 +61,7 @@ public class MathService {
         Flux<Response> response = this.webClient
                 .get()
                 .uri("reactive-math/table/{input}/stream", 5)
+                .attribute("auth", "oauth")
                 .retrieve()
                 .bodyToFlux(Response.class);
         response.subscribe(new DefaultSubscriber());
@@ -88,6 +112,15 @@ public class MathService {
                 .retrieve()
                 .bodyToFlux(Response.class);
         responseFlux.subscribe(new DefaultSubscriber());
+    }
+
+    public void attribute() {
+        Mono<Response> response = this.webClient
+                .get()
+                .uri("reactive-math/square/{input}/throw", 5)
+                .retrieve()
+                .bodyToMono(Response.class);
+        response.subscribe(new DefaultSubscriber());
     }
 
 }
